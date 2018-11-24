@@ -38,7 +38,6 @@ public:
     }
 
     ~Stack() {
-        if (this->data != 0)
             delete[] this->data;
     }
 
@@ -105,31 +104,21 @@ void InOrder(Node *node, Op func) {
     }
 }
 
-template<class Op>
-void PostOrder(Node *node, Op func) {
-//        Stack<Node *> s;
-//        Node *lastNodeVisited = nullptr;
-//        while (!s.IsEmpty() || node != nullptr) {
-//            if (node != nullptr) {
-//                s.Push(node);
-//                node = node->left;
-//            } else {
-//                Node *peekNode = s.Top();
-//                // если правый потомок существует и обход пришёл из левого потомка, двигаемся вправо
-//                if (peekNode->right != nullptr and lastNodeVisited != peekNode->right) {
-//                    node = peekNode->right;
-//                } else {
-//                    func(peekNode);
-//                    lastNodeVisited = s.Pop();
-//                }
-//            }
-//        }
-    if (node == nullptr) {
-        return;
+template<class T_Node, class Op>
+void PostOrder(T_Node *root, Op func) {
+    Stack<T_Node *> stack1;
+    Stack<T_Node *> stack2;
+    stack1.Push(root);
+    while (!stack1.IsEmpty()) {
+        auto node = stack1.Pop();
+        stack2.Push(node);
+        if (node->left != nullptr)stack1.Push(node->left);
+        if (node->right != nullptr)stack1.Push(node->right);
     }
-    PostOrder(node->left, func);
-    PostOrder(node->right, func);
-    func(node);
+    while(!stack2.IsEmpty()){
+        auto node = stack2.Pop();
+        func(node);
+    }
 }
 
 class BinTree {
@@ -141,7 +130,7 @@ public:
     }
 
     ~BinTree() {
-        PostOrder(root, [](Node *x) { x = nullptr; });
+        PostOrder(root, [](Node *x) { delete x; });
     }
 
     void Push(int _elem) {
