@@ -88,10 +88,10 @@ struct Node {
     ~Node() = default;
 };
 
-template<class Op>
-void InOrder(Node *node, Op func) {
-    Stack<Node *> call_stack;
-    Node *current_node = node;
+template<class T_Node, class Op>
+void InOrder(T_Node *node, Op func) {
+    Stack<T_Node *> call_stack;
+    T_Node *current_node = node;
 
     while (current_node != nullptr || !call_stack.IsEmpty()) {
         while (current_node != nullptr) {

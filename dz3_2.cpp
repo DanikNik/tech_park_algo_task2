@@ -71,13 +71,11 @@ public:
         return data[size];
     }
 
-
     bool IsEmpty() {
         return this->size == 0;
     }
 
 };
-
 template<class T>
 class Queue {
 private:
@@ -109,36 +107,6 @@ public:
     ~Queue() = default;
 };
 
-template<class T_Node>
-class LayerCount {
-private:
-    vector<int> tree_layers;
-public:
-    LayerCount() = default;
-    void operator()(T_Node* node) {
-        if(tree_layers.empty()){
-            tree_layers.emplace_back(1);
-        }
-        for (int i = 0; i < tree_layers.size(); ++i) {
-            if (node->height == i){
-                tree_layers[i] ++;
-            }
-            else{
-                tree_layers.emplace_back(1);
-            }
-        }
-    }
-
-    int GetMaxWidth() {
-        int max_width = 0;
-        for (auto i : tree_layers) {
-            max_width = max(i, max_width);
-        }
-        return max_width;
-    }
-};
-
-
 template<class T_Node, class Op>
 void InOrderDFS(T_Node *node, Op func) {
     Stack<T_Node *> call_stack;
@@ -154,34 +122,22 @@ void InOrderDFS(T_Node *node, Op func) {
         current_node = current_node->right;
     }
 }
-
 template<class T_Node, class Op>
-void PostOrderDFS(T_Node *node, Op func) {
-//        Stack<Node *> s;
-//        Node *lastNodeVisited = nullptr;
-//        while (!s.IsEmpty() || node != nullptr) {
-//            if (node != nullptr) {
-//                s.Push(node);
-//                node = node->left;
-//            } else {
-//                Node *peekNode = s.Top();
-//                // если правый потомок существует и обход пришёл из левого потомка, двигаемся вправо
-//                if (peekNode->right != nullptr and lastNodeVisited != peekNode->right) {
-//                    node = peekNode->right;
-//                } else {
-//                    func(peekNode);
-//                    lastNodeVisited = s.Pop();
-//                }
-//            }
-//        }
-    if (node == nullptr) {
-        return;
+void PostOrderDFS(T_Node *root, Op func) {
+    Stack<T_Node *> stack1;
+    Stack<T_Node *> stack2;
+    stack1.Push(root);
+    while (!stack1.IsEmpty()) {
+        auto node = stack1.Pop();
+        stack2.Push(node);
+        if (node->left != nullptr)stack1.Push(node->left);
+        if (node->right != nullptr)stack1.Push(node->right);
     }
-    PostOrderDFS(node->left, func);
-    PostOrderDFS(node->right, func);
-    func(node);
+    while (!stack2.IsEmpty()) {
+        auto node = stack2.Pop();
+        func(node);
+    }
 }
-
 template<class T_Node, class Op>
 void TraverseBFS(T_Node *root, Op func) {
     if (root == nullptr) {
@@ -201,37 +157,36 @@ void TraverseBFS(T_Node *root, Op func) {
 
 
 struct Node {
-    int value;
+    int key;
     Node *left;
     Node *right;
     int height;
 
-    Node() : value(0), height(0) {
+    Node() : key(0), height(1) {
         left = nullptr;
         right = nullptr;
     }
 
-    explicit Node(int v) : value(v), height(0) {
+    explicit Node(int v) : key(v), height(1) {
         left = nullptr;
         right = nullptr;
     }
 
     ~Node() = default;
 };
-
 struct D_Node {
     int priority;
-    int value;
+    int key;
     D_Node *left;
     D_Node *right;
     int height;
 
-    D_Node() : value(0), priority(0), height(0) {
+    D_Node() : key(0), priority(0), height(1) {
         left = nullptr;
         right = nullptr;
     }
 
-    explicit D_Node(int key, int prior) : value(key), priority(prior), height(0) {
+    explicit D_Node(int key, int prior) : key(key), priority(prior), height(1) {
         left = nullptr;
         right = nullptr;
     }
@@ -241,23 +196,23 @@ struct D_Node {
 
 class BinTree {
 private:
-    Node *root;
+    Node *_root;
 public:
-    BinTree() : root(nullptr) {}
+    BinTree() : _root(nullptr) {}
 
     ~BinTree() {
-        PostOrderDFS(root, [](Node *x) { x = nullptr; });
+        PostOrderDFS(_root, [](Node *x) { delete x; });
     }
 
     void Push(int _elem) {
         auto new_node = new Node(_elem);
-        if (root == nullptr) {
-            root = new_node;
+        if (_root == nullptr) {
+            _root = new_node;
             return;
         }
-        auto cur_node = root;
+        auto cur_node = _root;
         while (true) {
-            if (new_node->value < cur_node->value) {
+            if (new_node->key < cur_node->key) {
                 if (cur_node->left == nullptr) {
                     cur_node->left = new_node;
                     return;
@@ -277,25 +232,24 @@ public:
         }
     }
 
-    Node *get_root() {
-        return root;
+    Node *root() {
+        return _root;
     }
 };
-
 class DecartTree {
 private:
-    D_Node *root;
+    D_Node *_root;
 
-    void split(D_Node *currentNode, int key, D_Node *&left, D_Node *&right) {
-        if (currentNode == nullptr) {
+    void split(D_Node *node, int key, D_Node *&left, D_Node *&right) {
+        if (node == nullptr) {
             left = nullptr;
             right = nullptr;
-        } else if (currentNode->value <= key) {
-            split(currentNode->right, key, currentNode->right, right);
-            left = currentNode;
+        } else if (node->key < key) {
+            split(node->right, key, node->right, right);
+            left = node;
         } else {
-            split(currentNode->left, key, left, currentNode->left);
-            right = currentNode;
+            split(node->left, key, left, node->left);
+            right = node;
         }
     }
 
@@ -313,54 +267,43 @@ private:
     }
 
 public:
-    DecartTree() : root(nullptr) {}
+    DecartTree() : _root(nullptr) {}
 
     ~DecartTree() {
-        PostOrderDFS(root, [](D_Node *x) { x = nullptr; });
+        PostOrderDFS(_root, [](D_Node *x) { delete x; });
     }
 
-    void Insert(int key, int priority) {
-        if (root == nullptr) {
-            root = new D_Node(key, priority);
-            return;
-        }
-
-        D_Node *tmp = root;
-        D_Node *parent = nullptr;
-
-        while (tmp != nullptr && tmp->priority > priority) {
-            parent = tmp;
-
-            if (tmp->value < key) {
-                tmp = tmp->right;
-            } else {
-                tmp = tmp->left;
-            }
-        }
-
-        D_Node *left = nullptr;
-        D_Node *right = nullptr;
-
-        split(tmp, key, left, right);
-
-        auto *elem = new D_Node(key, priority);
-        elem->left = left;
-        elem->right = right;
-        if (parent != nullptr) {
-            if (parent->value > elem->value) {
-                parent->left = elem;
-                elem->height++;
-            } else {
-                parent->right = elem;
-                elem->height++;
-            }
+    void Push(int key, int priority) {
+        auto node = new D_Node(key, priority);
+        if (_root == nullptr) {
+            _root = node;
         } else {
-            root = elem;
+            D_Node* parent = nullptr;    //искомый родитель
+            auto less_prior_node = _root;
+            while (less_prior_node != nullptr && priority < less_prior_node->priority) {
+                parent = less_prior_node;
+                if (key < less_prior_node->key) {
+                    less_prior_node = less_prior_node->left;
+                } else {
+                    less_prior_node = less_prior_node->right;
+                }
+            }
+            split(less_prior_node, key, node->left, node->right);
+
+            if (parent != nullptr) {
+                if (node->key < parent->key) {
+                    parent->left = node;
+                } else {
+                    parent->right = node;
+                }
+            } else {
+                _root = node;
+            }
         }
     }
 
-    D_Node *get_root() {
-        return root;
+    D_Node *root() {
+        return _root;
     }
 };
 
@@ -375,16 +318,12 @@ int main(int argc, char *argv[]) {
         int key, priority;
         cin >> key >> priority;
         b_tree.Push(key);
-        d_tree.Insert(key, priority);
+        d_tree.Push(key, priority);
     }
 
-    LayerCount<Node> b_counter;
-    LayerCount<D_Node> d_counter;
-
-    TraverseBFS(b_tree.get_root(), b_counter);
-    cout << '\n';
-    TraverseBFS(d_tree.get_root(), d_counter);
-
-    cout << b_counter.GetMaxWidth() - d_counter.GetMaxWidth() << endl;
+    InOrderDFS(b_tree.root(), [](Node *x) { cout << x->key << ' '; });
+    cout << endl;
+    InOrderDFS(d_tree.root(), [](D_Node *x) { cout << x->key << ' '; });
+    cout << endl;
     return 0;
 }
