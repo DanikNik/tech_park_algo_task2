@@ -1,4 +1,4 @@
-//Дано число N ≤ 104 и последовательность целых чисел из [-231..231] длиной N.
+//Дано число N ≤ 104 и последовательность целых чисел из [-2^31..2^31] длиной N.
 //Требуется построить бинарное дерево, заданное наивным порядком вставки.
 // Т.е., при добавлении очередного числа K в дерево с корнем root,
 // если root→Key ≤ K, то узел K добавляется в правое поддерево root;
@@ -6,11 +6,10 @@
 // Рекурсия запрещена.
 
 #include <iostream>
-#include <stack>
 
 using namespace std;
 
-template <class T>
+template<class T>
 class Stack {
 private:
     int size;
@@ -18,7 +17,7 @@ private:
 
     void resize() {
         this->capacity *= 2;
-        T *tmp = new T[this->capacity];
+        auto *tmp = new T[this->capacity];
         for (int i = 0; i < this->size; ++i) {
             tmp[i] = this->data[i];
         }
@@ -37,10 +36,6 @@ public:
     Stack() : size(0), capacity(8) {
         this->data = new T[this->capacity];
     }
-
-//    Stack(const Stack &other) = default;
-
-//    Stack(Stack &&other) = default;
 
     ~Stack() {
         if (this->data != 0)
@@ -64,13 +59,15 @@ public:
         }
     }
 
+    T Top() {
+        return data[size];
+    }
+
+
     bool IsEmpty() {
         return this->size == 0;
     }
 
-    int Size() {
-        return this->size;
-    }
 };
 
 
@@ -84,13 +81,56 @@ struct Node {
         right = nullptr;
     }
 
-    Node(int v) : value(v) {
+    explicit Node(int v) : value(v) {
         left = nullptr;
         right = nullptr;
     }
 
     ~Node() = default;
 };
+
+template<class Op>
+void InOrder(Node *node, Op func) {
+    Stack<Node *> call_stack;
+    Node *current_node = node;
+
+    while (current_node != nullptr || !call_stack.IsEmpty()) {
+        while (current_node != nullptr) {
+            call_stack.Push(current_node);
+            current_node = current_node->left;
+        }
+        current_node = call_stack.Pop();
+        func(current_node);
+        current_node = current_node->right;
+    }
+}
+
+template<class Op>
+void PostOrder(Node *node, Op func) {
+//        Stack<Node *> s;
+//        Node *lastNodeVisited = nullptr;
+//        while (!s.IsEmpty() || node != nullptr) {
+//            if (node != nullptr) {
+//                s.Push(node);
+//                node = node->left;
+//            } else {
+//                Node *peekNode = s.Top();
+//                // если правый потомок существует и обход пришёл из левого потомка, двигаемся вправо
+//                if (peekNode->right != nullptr and lastNodeVisited != peekNode->right) {
+//                    node = peekNode->right;
+//                } else {
+//                    func(peekNode);
+//                    lastNodeVisited = s.Pop();
+//                }
+//            }
+//        }
+    if (node == nullptr) {
+        return;
+    }
+    PostOrder(node->left, func);
+    PostOrder(node->right, func);
+    func(node);
+}
 
 class BinTree {
 private:
@@ -100,12 +140,8 @@ public:
         root = nullptr;
     }
 
-    BinTree(int _root_val) {
-        root = new Node(_root_val);
-    }
-
     ~BinTree() {
-
+        PostOrder(root, [](Node *x) { x = nullptr; });
     }
 
     void Push(int _elem) {
@@ -134,18 +170,6 @@ public:
         }
     }
 
-    void Print(Node *_root) {
-        if(_root == nullptr){
-            return;
-        }
-        Print(_root->left);
-        cout << _root->value << ' ';
-        Print(_root->right);
-
-//        std::stack<Node *> traverse_stack;
-
-    }
-
     Node *get_root() {
         return root;
     }
@@ -156,11 +180,11 @@ int main(int argc, char *argv[]) {
     int n;
     cin >> n;
     BinTree tree;
-    for (int i = 1; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         int val_to_insert;
         cin >> val_to_insert;
         tree.Push(val_to_insert);
     }
-    tree.Print(tree.get_root());
+    InOrder(tree.get_root(), [](Node *x) { cout << x->value << ' '; });
     return 0;
 }
