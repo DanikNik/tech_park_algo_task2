@@ -13,10 +13,12 @@
 //Вычислить количество узлов в самом широком слое декартового дерева и количество узлов в самом широком слое наивного дерева поиска.
 //Вывести их разницу. Разница может быть отрицательна.
 
+#include <fstream>
 #include <iostream>
 #include <vector>
 
 using namespace std;
+
 
 template<class T>
 class Stack {
@@ -76,6 +78,7 @@ public:
     }
 
 };
+
 template<class T>
 class Queue {
 private:
@@ -122,6 +125,7 @@ void InOrderDFS(T_Node *node, Op func) {
         current_node = current_node->right;
     }
 }
+
 template<class T_Node, class Op>
 void PostOrderDFS(T_Node *root, Op func) {
     Stack<T_Node *> stack1;
@@ -138,6 +142,7 @@ void PostOrderDFS(T_Node *root, Op func) {
         func(node);
     }
 }
+
 template<class T_Node, class Op>
 void TraverseBFS(T_Node *root, Op func) {
     if (root == nullptr) {
@@ -160,33 +165,32 @@ struct Node {
     int key;
     Node *left;
     Node *right;
-    int height;
 
-    Node() : key(0), height(1) {
+    Node() : key(0) {
         left = nullptr;
         right = nullptr;
     }
 
-    explicit Node(int v) : key(v), height(1) {
+    explicit Node(int v) : key(v) {
         left = nullptr;
         right = nullptr;
     }
 
     ~Node() = default;
 };
+
 struct D_Node {
     int priority;
     int key;
     D_Node *left;
     D_Node *right;
-    int height;
 
-    D_Node() : key(0), priority(0), height(1) {
+    D_Node() : key(0), priority(0) {
         left = nullptr;
         right = nullptr;
     }
 
-    explicit D_Node(int key, int prior) : key(key), priority(prior), height(1) {
+    explicit D_Node(int key, int prior) : key(key), priority(prior) {
         left = nullptr;
         right = nullptr;
     }
@@ -218,7 +222,6 @@ public:
                     return;
                 } else {
                     cur_node = cur_node->left;
-                    new_node->height++;
                 }
             } else {
                 if (cur_node->right == nullptr) {
@@ -226,7 +229,6 @@ public:
                     return;
                 } else {
                     cur_node = cur_node->right;
-                    new_node->height++;
                 }
             }
         }
@@ -236,6 +238,7 @@ public:
         return _root;
     }
 };
+
 class DecartTree {
 private:
     D_Node *_root;
@@ -278,7 +281,7 @@ public:
         if (_root == nullptr) {
             _root = node;
         } else {
-            D_Node* parent = nullptr;    //искомый родитель
+            D_Node *parent = nullptr;    //искомый родитель
             auto less_prior_node = _root;
             while (less_prior_node != nullptr && priority < less_prior_node->priority) {
                 parent = less_prior_node;
@@ -307,23 +310,59 @@ public:
     }
 };
 
+template<class T_Node>
+int find_max_width(T_Node* root) {
+    if (root == nullptr) {
+        return -1;
+    }
+    Queue<T_Node *> traverse_queue;
+    traverse_queue.Push(root);
+    traverse_queue.Push(nullptr);
+    int max_width = 0;
+    while (!traverse_queue.IsEmpty()) {
+        static int cur_width = 0;
+        T_Node *node = traverse_queue.Pop();
+        if (node == nullptr) {
+            if (traverse_queue.IsEmpty()) {
+                break;
+            } else {
+                max_width = max(max_width, cur_width);
+                cur_width = 0;
+                traverse_queue.Push(nullptr);
+            }
+        } else {
+            if (node->left != nullptr) {
+                traverse_queue.Push(node->left);
+                cur_width++;
+            }
+            if (node->right != nullptr) {
+                traverse_queue.Push(node->right);
+                cur_width++;
+            }
+        }
+    }
+    return max_width;
+}
 
 int main(int argc, char *argv[]) {
     DecartTree d_tree;
     BinTree b_tree;
 
+    ifstream fin("input.txt");
     int n;
-    cin >> n;
+    fin >> n;
     for (int i = 0; i < n; ++i) {
         int key, priority;
-        cin >> key >> priority;
+        fin >> key >> priority;
         b_tree.Push(key);
         d_tree.Push(key, priority);
     }
 
-    InOrderDFS(b_tree.root(), [](Node *x) { cout << x->key << ' '; });
-    cout << endl;
-    InOrderDFS(d_tree.root(), [](D_Node *x) { cout << x->key << ' '; });
-    cout << endl;
+//    InOrderDFS(b_tree.root(), [](Node *x) { cout << x->key << ' '; });
+//    cout << endl;
+//    InOrderDFS(d_tree.root(), [](D_Node *x) { cout << x->key << ' '; });
+//    cout << endl;
+
+    cout << (find_max_width(d_tree.root()) - find_max_width(b_tree.root())) << endl;
     return 0;
 }
