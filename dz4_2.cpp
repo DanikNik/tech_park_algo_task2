@@ -1,8 +1,12 @@
 //
-// Created by daniknik on 24.11.18.
+// Дано число N и N строк.
+// Каждая строка содержащит команду добавления или удаления натуральных чисел, а также запрос на получение k-ой порядковой статистики.
+// Команда добавления числа A задается положительным числом A, команда удаления числа A задается отрицательным числом “-A”.
+// Запрос на получение k-ой порядковой статистики задается числом k.
+// Требуемая скорость выполнения запроса - O(log n).
 //
 #include <iostream>
-#include <vector>
+#include <stack>
 
 using namespace std;
 
@@ -51,12 +55,16 @@ public:
             this->size--;
             return this->data[this->size];
         } else {
-            return T(-1);
+            return NULL;
         }
     }
 
     T Top() {
-        return data[size];
+        if (!IsEmpty()) {
+            return data[size - 1];
+        } else {
+            return NULL;
+        }
     }
 
     bool IsEmpty() {
@@ -182,8 +190,8 @@ private:
         root->height = max(height_right, height_left) + 1;
     }
 
-    int b_factor(Node *p) {
-        return height(p->right) - height(p->left);
+    int b_factor(Node *root) {
+        return height(root->right) - height(root->left);
     }
 
     Node *rotate_right(Node *root) {
@@ -204,20 +212,19 @@ private:
         return node;
     }
 
-    void balance(Node *root) {
+    Node *balance(Node *root) {
         fix_height(root);
         if (b_factor(root) == 2) {
             if (b_factor(root->right) < 0)
                 root->right = rotate_right(root->right);
-            root = rotate_left(root);
-            return;
+            return rotate_left(root);
         }
         if (b_factor(root) == -2) {
             if (b_factor(root->left) > 0)
                 root->left = rotate_left(root->left);
-            root = rotate_right(root);
-            return;
+            return rotate_right(root);
         }
+        return root;
     }
 
     Node *find_max(Node *root) {
@@ -236,8 +243,8 @@ private:
         return root;
     }
 
-public:
     Node *_root;
+public:
 
     AVLTree() : _root(nullptr) {}
 
@@ -253,7 +260,7 @@ public:
             return;
         }
         auto new_node = new Node(key);
-        vector<Node *> visited;
+        std::stack<Node *> visited;
         Node *cur_node = _root;
 
         while (true) {
@@ -262,7 +269,7 @@ public:
                     cur_node->left = new_node;
                     break;
                 } else {
-                    visited.push_back(cur_node);
+                    visited.push(cur_node);
                     cur_node = cur_node->left;
                 }
             } else {
@@ -270,23 +277,40 @@ public:
                     cur_node->right = new_node;
                     break;
                 } else {
-                    visited.push_back(cur_node);
+                    visited.push(cur_node);
                     cur_node = cur_node->right;
                 }
             }
         }
-        for (auto i = visited.end(); i > visited.begin(); i--) {
-            balance(*i);
+
+        while(!visited.empty()){
+            auto node = visited.top();
+            visited.pop();
+            auto tmp = visited.empty() ? NULL : visited.top();
+            if(tmp){
+                if(node->key < tmp->key){
+                    tmp->left = balance(node);
+                } else {
+                    tmp->right= balance(node);
+                }
+            } else {
+                if(_root->key < _root->key){
+                    _root->left = balance(node);
+                } else {
+                    _root->right= balance(node);
+                }
+            }
         }
     }
 
+
     bool Delete(int key) {
         if (!_root) return false;
-        vector<Node *> visited;
+        Stack<Node *> visited;
         auto cur_node = _root;
         while (cur_node->key != key) {
             if (!cur_node) return false; //didn't find they key
-            visited.push_back(cur_node);
+            visited.Push(cur_node);
             if (key < cur_node->key) {
                 cur_node = cur_node->left;
             } else {
@@ -294,25 +318,29 @@ public:
             }
         }
         // cur_node stores the pointer to the node to delete
-        visited.push_back(cur_node);
-        auto parent = visited.back();
+        visited.Push(cur_node);
+        auto parent = visited.Top();
         auto cur_node_l = cur_node->left;
         auto cur_node_r = cur_node->right;
         delete cur_node;
+
         // this leaves us with two sub-trees -- cur_node_l and cur_node_r
         // we need to find max at left sub-tree and place it instead of cur_node, balancing required
         auto max_node = find_max(cur_node_l);
         cur_node_l = remove_max(cur_node_l);
         max_node->left = cur_node_l;
         max_node->right = cur_node_r;
+
         if (max_node->key < parent->key) {
             parent->left = max_node;
         } else {
             parent->right = max_node;
         }
-        for (auto i = visited.end(); i > visited.begin(); i--) {
-            balance(*i);
+
+        while (Node *p = visited.Pop()) {
+            balance(p);
         }
+
         return true;
     }
 
@@ -344,7 +372,6 @@ struct Operation {
 };
 
 void perform_op(Operation op, AVLTree &tree) {
-    bool code;
     switch (op.sign) {
         case '+':
             tree.Insert(op.value);

@@ -7,6 +7,7 @@ add_executable(tech_park_algo_task2
 #        dz1_2.cpp
 #        dz2_1.cpp
 #        dz3_2.cpp
-        dz4_2.cpp
+#        dz4_2.cpp
+        test.cpp
 #        huffman.cpp
         )
